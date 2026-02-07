@@ -1,0 +1,32 @@
+# --- General / System ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# --- Backend (Python) ---
+backend/__pycache__/
+backend/*.py[cod]
+backend/venv/
+backend/.venv/
+backend/env/
+
+# --- Frontend (Node.js/React) ---
+# אנחנו מכינים את זה מראש כדי שלא תעלה בטעות את התיקייה הענקית הזו
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.eslintcache
+
+# --- Environment Variables (CRITICAL!) ---
+# לעולם אל תעלה סיסמאות ומפתחות לגיט!
+.env
+backend/.env
+frontend/.env
+frontend/.env.local
+
+# --- Docker & Database Data ---
+# אם שמרנו מידע מקומי של הדאטה-בייסים
+qdrant_storage/
+postgres_data/
