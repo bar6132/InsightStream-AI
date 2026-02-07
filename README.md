@@ -100,7 +100,7 @@ docker-compose up --build
 * Swagger Documentation: http://localhost:8000/docs
 
 ## 📖 API Workflow Guide
-** To test the system using the built-in Swagger UI: **
+To test the system using the built-in Swagger UI: 
 
 ### 1. Authentication (Sign Up):
 * Use POST /auth/signup to create a new user.
