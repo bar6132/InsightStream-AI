@@ -4,8 +4,22 @@ from .core.database import supabase, qdrant
 from .services.ai_engine import ai_engine
 from .services.ingestion import ingestion_service
 from .routers import auth, profile, news, admin
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="InsightStream AI API")
+
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"], # מאפשר את כל ה-Methods (GET, POST, OPTIONS וכו')
+    allow_headers=["*"], # מאפשר את כל ה-Headers (כולל Authorization)
+)
 
 app.include_router(auth.router)
 app.include_router(profile.router)

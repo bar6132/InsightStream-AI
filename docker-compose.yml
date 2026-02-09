@@ -1,6 +1,5 @@
-version: '3.8'
-
 services:
+  # --- Backend Service ---
   backend:
     build: ./backend
     container_name: insightstream-backend
@@ -8,6 +7,24 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+    env_file:
+      - ./backend/.env
     environment:
       - DEPLOYMENT_MODE=local
     restart: always
+
+  # --- Frontend Service ---
+  frontend:
+    build: ./frontend
+    container_name: insightstream-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    # אם אין לך קובץ .env.local, פשוט נשתמש ב-environment ישירות
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    restart: always
+    depends_on:
+      - backend
