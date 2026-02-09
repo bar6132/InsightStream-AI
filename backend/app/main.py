@@ -3,13 +3,14 @@ from qdrant_client.http.models import Distance, VectorParams
 from .core.database import supabase, qdrant
 from .services.ai_engine import ai_engine
 from .services.ingestion import ingestion_service
-from .routers import auth, profile, news
+from .routers import auth, profile, news, admin
 
 app = FastAPI(title="InsightStream AI API")
 
 app.include_router(auth.router)
 app.include_router(profile.router)
 app.include_router(news.router)
+app.include_router(admin.router)
 
 @app.on_event("startup")
 async def init_db():
