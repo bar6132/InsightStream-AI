@@ -1,17 +1,51 @@
 services:
+  # --- RabbitMQ Message Broker ---
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: insightstream-rabbitmq
+    ports:
+      - "5673:5672"
+      - "15673:15672"  # Management UI → http://localhost:15673 (guest/guest)
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
   # --- Backend Service ---
   backend:
     build: ./backend
     container_name: insightstream-backend
     ports:
-      - "8000:8000"
+      - "8004:8000"
     volumes:
       - ./backend:/app
     env_file:
       - ./backend/.env
     environment:
       - DEPLOYMENT_MODE=local
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
     restart: always
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  # --- Background Worker (RabbitMQ Consumer) ---
+  worker:
+    build: ./backend
+    container_name: insightstream-worker
+    command: python worker.py
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    restart: always
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
   # --- Frontend Service ---
   frontend:
@@ -22,9 +56,13 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    # אם אין לך קובץ .env.local, פשוט נשתמש ב-environment ישירות
+    env_file:
+      - ./frontend/.env
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      # Browser calls (client-side) → Tailscale IP + backend port
+      - NEXT_PUBLIC_API_URL=http://100.78.219.101:8004
+      # Server-side Next.js API routes → internal Docker network
+      - BACKEND_URL=http://backend:8000
     restart: always
     depends_on:
       - backend

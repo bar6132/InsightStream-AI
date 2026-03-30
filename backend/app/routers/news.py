@@ -57,7 +57,7 @@
 #         raise HTTPException(status_code=500, detail="Failed to fetch news feed")
 from fastapi import APIRouter, Depends, HTTPException
 from ..dependencies import get_current_user
-from ..core.database import supabase, qdrant
+from ..core.database import supabase_admin as supabase, qdrant
 from ..services.ai_engine import ai_engine
 
 router = APIRouter(prefix="/news", tags=["News"])

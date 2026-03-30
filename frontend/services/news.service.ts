@@ -20,11 +20,8 @@ export interface FeedResponse {
 }
 
 export const newsService = {
-  // קבלת הפיד האישי
-  async getMyFeed(tags: string[]) {
-    const response = await api.post<FeedResponse>("/feed", { tags });
+  async getMyFeed() {
+    const response = await api.get<FeedResponse>("/news/feed");
     return response.data;
   },
-  
-  // בעתיד נוסיף פה: getArticleById, searchNews, etc.
 };

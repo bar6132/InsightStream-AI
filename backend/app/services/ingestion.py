@@ -1,7 +1,7 @@
 import feedparser
 import uuid
 from datetime import datetime
-from ..core.database import supabase, qdrant
+from ..core.database import supabase, supabase_admin, qdrant
 from ..services.ai_engine import ai_engine
 from qdrant_client.models import PointStruct
 
@@ -63,7 +63,7 @@ class IngestionService:
         title = entry.title
 
         # 2. Check Duplication
-        existing = supabase.table("news_articles").select("id").eq("url", url).execute()
+        existing = supabase_admin.table("news_articles").select("id").eq("url", url).execute()
         if existing.data:
             raise ValueError("Duplicate article")
 
@@ -88,7 +88,7 @@ class IngestionService:
             "source": source_name,
             "published_at": datetime.now().isoformat()
         }
-        supabase.table("news_articles").insert(article_data).execute()
+        supabase_admin.table("news_articles").insert(article_data).execute()
 
         # 5. Save to Qdrant
         qdrant.upsert(

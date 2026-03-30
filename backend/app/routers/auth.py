@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
-from ..core.database import supabase
+from ..core.database import supabase_admin as supabase
 from ..schemas.user import UserAuth, Token
 
 router = APIRouter(

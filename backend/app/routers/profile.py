@@ -52,7 +52,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List
 from ..dependencies import get_current_user
-from ..core.database import supabase
+from ..core.database import supabase_admin as supabase
 
 router = APIRouter(prefix="/profile", tags=["Profile"])
 
@@ -81,7 +81,7 @@ async def update_preferences(preferences: UserTags, user = Depends(get_current_u
             "tags": preferences.tags
         }
         
-        result = supabase.table("user_preferences").upsert(data).execute()
+        result = supabase.table("user_preferences").upsert(data, on_conflict="user_id").execute()
         return {"message": "Preferences updated successfully", "tags": preferences.tags}
 
     except Exception as e:

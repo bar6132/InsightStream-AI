@@ -1,8 +1,8 @@
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI
 from qdrant_client.http.models import Distance, VectorParams
 from .core.database import supabase, qdrant
 from .services.ai_engine import ai_engine
-from .services.ingestion import ingestion_service
+from .services.queue import publish_ingestion_task
 from .routers import auth, profile, news, admin
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -11,6 +11,8 @@ app = FastAPI(title="InsightStream AI API")
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://100.78.219.101:3000",
+    "http://100.78.219.101",
 ]
 
 app.add_middleware(
@@ -103,13 +105,13 @@ async def test_ai_capabilities():
     return report
 
 @app.post("/trigger-ingestion")
-async def trigger_ingestion(background_tasks: BackgroundTasks):
+async def trigger_ingestion():
     """
-    Endpoint ידני להפעלת האיסוף.
-    משתמש ב-BackgroundTasks כדי לא לתקוע את השרת.
+    Publishes a scrape job to the RabbitMQ queue.
+    The worker container picks it up and runs the pipeline asynchronously.
     """
-    background_tasks.add_task(ingestion_service.run_pipeline)
-    return {"status": "Ingestion started in background ⏳"}
+    await publish_ingestion_task({"task": "scrape_all"})
+    return {"status": "Job queued ⏳ — worker will process it shortly"}
 
 
 @app.get("/debug-qdrant")
