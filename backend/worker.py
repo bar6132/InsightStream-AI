@@ -15,6 +15,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 sys.path.insert(0, os.path.dirname(__file__))
 
 from app.services.ingestion import ingestion_service
+from app.services.ollama_fallback import ollama_fallback
 
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/")
 QUEUE_NAME = "ingestion_tasks"
@@ -39,6 +40,15 @@ async def handle_message(message: aio_pika.abc.AbstractIncomingMessage) -> None:
 
 async def main() -> None:
     print("🐰 InsightStream Worker starting...")
+
+    # Initialize Ollama fallback
+    print("🔄 Initializing Ollama fallback model...")
+    is_ollama_healthy = await ollama_fallback.check_health()
+    if not is_ollama_healthy:
+        print("⚠️ Ollama not healthy, pulling model...")
+        await ollama_fallback.pull_model()
+    else:
+        print("✅ Ollama is ready")
 
     # --- Scheduler: run now + every 6 hours ---
     scheduler = AsyncIOScheduler()
