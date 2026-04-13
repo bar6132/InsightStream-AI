@@ -4,7 +4,7 @@ import httpx
 import os
 import asyncio
 from groq import Groq
-import google.generativeai as genai
+from google import genai
 from ..core.database import supabase, qdrant
 from ..core.config import settings
 from .ollama_fallback import ollama_fallback

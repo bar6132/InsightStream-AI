@@ -6,11 +6,24 @@ Thumbs.db
 *.log
 
 # --- Backend (Python) ---
-backend/__pycache__/
-backend/*.py[cod]
+# Python cache files and compiled bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
 backend/venv/
 backend/.venv/
 backend/env/
+backend/ENV/
+venv/
+.venv/
 
 # --- Frontend (Node.js/React) ---
 # אנחנו מכינים את זה מראש כדי שלא תעלה בטעות את התיקייה הענקית הזו
