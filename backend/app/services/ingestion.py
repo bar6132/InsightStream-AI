@@ -4,6 +4,7 @@ from datetime import datetime
 from ..core.database import supabase, supabase_admin, qdrant
 from ..services.ai_engine import ai_engine
 from qdrant_client.models import PointStruct
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 # --- 1. EXPANDED RSS FEEDS LIST ---
 RSS_FEEDS = [
@@ -43,14 +44,15 @@ class IngestionService:
                 print(f"📥 Parsing: {source_name} ({len(feed.entries)} items)")
 
                 # Limit to 5 articles per feed
-                for entry in feed.entries[:5]: 
+                for entry in feed.entries[:5]:
                     try:
                         await self.process_article(entry, source_name)
                         results["added"] += 1
-                    except ValueError:
-                         results["skipped"] += 1
+                    except ValueError as ve:
+                        # Duplicate article - expected, skip
+                        results["skipped"] += 1
                     except Exception as e:
-                        print(f"❌ Error processing {entry.link}: {e}")
+                        print(f"❌ Error processing {entry.get('link', 'unknown')}: {type(e).__name__}: {e}")
                         results["errors"] += 1
                         
             except Exception as e:
@@ -58,6 +60,10 @@ class IngestionService:
 
         return results
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10)
+    )
     async def process_article(self, entry, source_name):
         url = entry.link
         title = entry.title
