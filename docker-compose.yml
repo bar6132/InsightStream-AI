@@ -13,6 +13,23 @@ services:
       retries: 5
     restart: always
 
+  # --- Ollama Local LLM (Fallback for Summarization) ---
+  ollama:
+    image: ollama/ollama:latest
+    container_name: insightstream-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    healthcheck:
+      test: curl -f http://localhost:11434/api/tags || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
   # --- Backend Service ---
   backend:
     build: ./backend
@@ -66,3 +83,6 @@ services:
     restart: always
     depends_on:
       - backend
+
+volumes:
+  ollama_data:
