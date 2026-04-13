@@ -18,6 +18,14 @@ class HealthCheckService:
     - Supabase (PostgreSQL + Auth)
     - RabbitMQ (message broker)
     - Ollama (local fallback)
+
+    NOTE: Some check methods use synchronous API calls (Groq, Gemini, Qdrant, Supabase).
+    This is acceptable for health checks which are:
+    - Infrequent (not on every request)
+    - Short-lived (< 5s each)
+    - Parallel-safe (run concurrently via asyncio.gather)
+
+    For true async operations, these libraries would need async client variants.
     """
 
     async def check_groq(self) -> Dict[str, any]:
@@ -121,13 +129,22 @@ class HealthCheckService:
 
     async def check_ollama(self) -> Dict[str, any]:
         """Check Ollama local fallback availability"""
-        is_available = await ollama_fallback.check_health()
-        return {
-            "status": "healthy" if is_available else "unhealthy",
-            "service": "Ollama (Local Fallback)",
-            "available": is_available,
-            "timestamp": datetime.utcnow().isoformat()
-        }
+        try:
+            is_available = await ollama_fallback.check_health()
+            return {
+                "status": "healthy" if is_available else "unhealthy",
+                "service": "Ollama (Local Fallback)",
+                "available": is_available,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        except Exception as e:
+            return {
+                "status": "unhealthy",
+                "service": "Ollama (Local Fallback)",
+                "error": str(e),
+                "available": False,
+                "timestamp": datetime.utcnow().isoformat()
+            }
 
     async def get_full_report(self) -> Dict[str, any]:
         """Get comprehensive health report for all services"""
