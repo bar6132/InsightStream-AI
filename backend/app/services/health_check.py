@@ -1,10 +1,10 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 from datetime import datetime
 import httpx
 import os
 import asyncio
 from groq import Groq
-from google import genai
+import google.generativeai as genai
 from ..core.database import supabase, qdrant
 from ..core.config import settings
 from .ollama_fallback import ollama_fallback
@@ -28,14 +28,15 @@ class HealthCheckService:
     For true async operations, these libraries would need async client variants.
     """
 
-    async def check_groq(self) -> Dict[str, any]:
+    async def check_groq(self) -> Dict[str, Any]:
         """Check Groq API availability"""
         try:
             client = Groq(api_key=settings.GROQ_API_KEY)
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[{"role": "user", "content": "test"}],
-                max_tokens=10
+                max_tokens=10,
+                timeout=10
             )
             return {
                 "status": "healthy",
@@ -50,18 +51,26 @@ class HealthCheckService:
                 "timestamp": datetime.utcnow().isoformat()
             }
 
-    async def check_google_gemini(self) -> Dict[str, any]:
+    async def check_google_gemini(self) -> Dict[str, Any]:
         """Check Google Gemini API availability"""
         try:
             client = genai.Client(api_key=settings.GOOGLE_API_KEY)
             result = client.models.embed_content(
                 model="models/gemini-embedding-001",
                 contents="health check",
+                timeout=10
             )
             if result.embeddings:
                 return {
                     "status": "healthy",
                     "service": "Google Gemini",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            else:
+                return {
+                    "status": "unhealthy",
+                    "service": "Google Gemini",
+                    "error": "No embeddings returned",
                     "timestamp": datetime.utcnow().isoformat()
                 }
         except Exception as e:
@@ -72,10 +81,13 @@ class HealthCheckService:
                 "timestamp": datetime.utcnow().isoformat()
             }
 
-    async def check_qdrant(self) -> Dict[str, any]:
+    async def check_qdrant(self) -> Dict[str, Any]:
         """Check Qdrant vector database availability"""
         try:
-            collection_info = qdrant.get_collection("news_vectors")
+            collection_info = qdrant.get_collection(
+                "news_vectors",
+                timeout=10
+            )
             return {
                 "status": "healthy",
                 "service": "Qdrant",
@@ -90,7 +102,7 @@ class HealthCheckService:
                 "timestamp": datetime.utcnow().isoformat()
             }
 
-    async def check_supabase(self) -> Dict[str, any]:
+    async def check_supabase(self) -> Dict[str, Any]:
         """Check Supabase (PostgreSQL + Auth) availability"""
         try:
             response = supabase.table("news_articles").select("id").limit(1).execute()
@@ -107,7 +119,7 @@ class HealthCheckService:
                 "timestamp": datetime.utcnow().isoformat()
             }
 
-    async def check_rabbitmq(self) -> Dict[str, any]:
+    async def check_rabbitmq(self) -> Dict[str, Any]:
         """Check RabbitMQ availability"""
         try:
             import aio_pika
@@ -127,7 +139,7 @@ class HealthCheckService:
                 "timestamp": datetime.utcnow().isoformat()
             }
 
-    async def check_ollama(self) -> Dict[str, any]:
+    async def check_ollama(self) -> Dict[str, Any]:
         """Check Ollama local fallback availability"""
         try:
             is_available = await ollama_fallback.check_health()
@@ -146,7 +158,7 @@ class HealthCheckService:
                 "timestamp": datetime.utcnow().isoformat()
             }
 
-    async def get_full_report(self) -> Dict[str, any]:
+    async def get_full_report(self) -> Dict[str, Any]:
         """Get comprehensive health report for all services"""
         report = {
             "timestamp": datetime.utcnow().isoformat(),
