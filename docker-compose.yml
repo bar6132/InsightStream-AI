@@ -23,8 +23,15 @@ services:
       - ollama_data:/root/.ollama
     environment:
       - OLLAMA_HOST=0.0.0.0:11434
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     healthcheck:
-      test: curl -f http://localhost:11434/api/tags || exit 1
+      test: ["CMD", "ollama", "list"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -52,16 +59,20 @@ services:
   worker:
     build: ./backend
     container_name: insightstream-worker
-    command: python worker.py
+    command: python -u worker.py
     volumes:
       - ./backend:/app
     env_file:
       - ./backend/.env
     environment:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - PYTHONUNBUFFERED=1
     restart: always
     depends_on:
       rabbitmq:
+        condition: service_healthy
+      ollama:
         condition: service_healthy
 
   # --- Frontend Service ---
@@ -76,10 +87,11 @@ services:
     env_file:
       - ./frontend/.env
     environment:
-      # Browser calls (client-side) → Tailscale IP + backend port
-      - NEXT_PUBLIC_API_URL=http://100.78.219.101:8004
+      # Browser calls (client-side) → localhost + backend port
+      - NEXT_PUBLIC_API_URL=http://localhost:8004
       # Server-side Next.js API routes → internal Docker network
       - BACKEND_URL=http://backend:8000
+      # Supabase Realtime (live feed updates only — not used for auth)
     restart: always
     depends_on:
       - backend
