@@ -4,7 +4,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.log
-.claude\*
+.claude/
 
 # --- Backend (Python) ---
 # Python cache files and compiled bytecode
