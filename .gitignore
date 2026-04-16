@@ -5,6 +5,7 @@ Thumbs.db
 .vscode/
 *.log
 .claude/
+audit-report.md
 
 # --- Backend (Python) ---
 # Python cache files and compiled bytecode
