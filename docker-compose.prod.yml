@@ -28,7 +28,6 @@ services:
     depends_on:
       - qdrant
       - rabbitmq
-      - postgres
     restart: unless-stopped
     networks:
       - insightstream-network
@@ -73,7 +72,6 @@ services:
     depends_on:
       - qdrant
       - rabbitmq
-      - postgres
       - ollama
     restart: unless-stopped
     networks:
@@ -298,8 +296,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL=https://api.yourdomain.com
-      NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.yourdomain.com}
+      - NODE_ENV=production
     depends_on:
       - api
     restart: unless-stopped

@@ -29,15 +29,15 @@ class HealthCheckService:
     """
 
     async def check_groq(self) -> Dict[str, Any]:
-        """Check Groq API availability"""
+        """Check Groq API availability by listing models (no inference cost)"""
         try:
-            client = Groq(api_key=settings.GROQ_API_KEY)
-            response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "user", "content": "test"}],
-                max_tokens=10,
-                timeout=10
-            )
+            loop = asyncio.get_event_loop()
+
+            def _list_models():
+                client = Groq(api_key=settings.GROQ_API_KEY)
+                return client.models.list()
+
+            await loop.run_in_executor(None, _list_models)
             return {
                 "status": "healthy",
                 "service": "Groq",
@@ -52,27 +52,20 @@ class HealthCheckService:
             }
 
     async def check_google_gemini(self) -> Dict[str, Any]:
-        """Check Google Gemini API availability"""
+        """Check Google Gemini API availability by listing models (no inference cost)"""
         try:
-            client = genai.Client(api_key=settings.GOOGLE_API_KEY)
-            result = client.models.embed_content(
-                model="models/gemini-embedding-001",
-                contents="health check",
-                timeout=10
-            )
-            if result.embeddings:
-                return {
-                    "status": "healthy",
-                    "service": "Google Gemini",
-                    "timestamp": datetime.utcnow().isoformat()
-                }
-            else:
-                return {
-                    "status": "unhealthy",
-                    "service": "Google Gemini",
-                    "error": "No embeddings returned",
-                    "timestamp": datetime.utcnow().isoformat()
-                }
+            loop = asyncio.get_event_loop()
+
+            def _list_models():
+                client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+                return list(client.models.list())
+
+            await loop.run_in_executor(None, _list_models)
+            return {
+                "status": "healthy",
+                "service": "Google Gemini",
+                "timestamp": datetime.utcnow().isoformat()
+            }
         except Exception as e:
             return {
                 "status": "unhealthy",
@@ -84,9 +77,9 @@ class HealthCheckService:
     async def check_qdrant(self) -> Dict[str, Any]:
         """Check Qdrant vector database availability"""
         try:
-            collection_info = qdrant.get_collection(
-                "news_vectors",
-                timeout=10
+            loop = asyncio.get_event_loop()
+            collection_info = await loop.run_in_executor(
+                None, lambda: qdrant.get_collection("news_vectors")
             )
             return {
                 "status": "healthy",
@@ -105,7 +98,10 @@ class HealthCheckService:
     async def check_supabase(self) -> Dict[str, Any]:
         """Check Supabase (PostgreSQL + Auth) availability"""
         try:
-            response = supabase.table("news_articles").select("id").limit(1).execute()
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(
+                None, lambda: supabase.table("news_articles").select("id").limit(1).execute()
+            )
             return {
                 "status": "healthy",
                 "service": "Supabase",
